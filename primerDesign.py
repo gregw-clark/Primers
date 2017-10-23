@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 
 import string, re, sys
-from subprocess import *
-import Bio.Emboss.Primer3 as Primer3
-#from Bio.Emboss.Applications import Primer3Commandline
-
+from subprocess import Popen.PIPE
 
 class Primer:
 	#PRIMER_TM_FORMULA=1 - refers to Santa Lucia JR (1998)
