@@ -77,13 +77,9 @@ class APEfile:
 				sys.exit()
 			else:
 				self.APEgDNA=self.APEgDNA[0]
+				self.fullfile=open(self.APEgDNA,'r').readlines()
 				self.fileFound=True
 				
-	def readAPESequence(self):
-		self.OriginStart=False
-		fullfile=open(self.APEgDNA,'r').readlines()
-		self.fullfile=open(self.APEgDNA,'r').readlines()
-
 	def readAPESequence(self):
 		self.OriginStart=False
 		fullfile=self.fullfile
@@ -202,11 +198,6 @@ class APEfile:
 			self.wtStart=self.upstream.start
 			self.wtEnd=self.upstream.end
 
-	def CreatePrimer3File(self):
-			target_length=filein.wtEnd-filein.wtStart
-			pr=Primer(symbol)
-			if filein.wtStart > 2000:
-				initCUT=2000
 
 	def CreatePrimer3File(self):
 	
@@ -220,7 +211,7 @@ class APEfile:
 
 			else:
 				self.upstreamCUT=0
-				initCUT=filein.wtStart
+				self.initCUT=filein.wtStart
 				self.initCUT=filein.wtStart
 			if len(filein.Sequence) - filein.wtEnd > 2000:
 				downstreamCUT=filein.wtEnd+2000
@@ -233,7 +224,7 @@ class APEfile:
 			io=open(self.filename,'w')
 			io.write(pr.SEQUENCE_ID+"\n")
 			io.write(pr.SEQUENCE_TEMPLATE)
-			io.write("SEQUENCE_TARGET="+str(initCUT)+","+str(target_length)+"\n")
+			io.write("SEQUENCE_TARGET="+str(self.initCUT)+","+str(self.target_length)+"\n")
 			io.write(pr.GENERIC_PARAMS)
 			io.write(pr.HAIRPIN+"\n")
 			io.write(pr.SELF_TH+"\n")
@@ -371,7 +362,6 @@ class APEfile:
 			fend_th=float(fend_th)
 			fhairpin=float(fhairpin)
 			fquality=float(fquality)
-			FOR[frank+"_"+fsequence]=fordata
 			fsequence=fsequence.strip().upper()
 			self.FOR[fsequence]=fordata
 
@@ -388,7 +378,6 @@ class APEfile:
 				rend_th=float(rend_th)
 				rhairpin=float(rhairpin)
 				rquality=float(rquality)
-				REV[rrank+"_"+rsequence]=revdata
 				rsequence=rsequence.strip().upper()
 				self.REV[rsequence]=revdata
 				thermoScore=round(sum([rGC+fGC+rTm+fTm]),1)
@@ -502,8 +491,6 @@ class APEfile:
 		if self.ForwardFile and self.ReverseFile:
 			# # sequence                       start ln  N   GC%     Tm any_th end_th   pin   sim   lity
 			self.FormatPrimers()
-		else:
-			self.ValidPairs=False
 		else:
 			self.ValidPairs=False
 
@@ -626,10 +613,6 @@ class APEfeatures(APEfile):
 		self.start=int(start)
 		self.end=int(end)
 		#
-		print direction,filein.Sequence[self.start:self.end]
-		self.direction=direction
-		for x,line in enumerate(remaininglines):
-	
 		self.direction=direction
 		for x,line in enumerate(remaininglines):
 			if self.misc.match(line) or self.exontag.match(line) or line.startswith("ORIGIN"):
@@ -657,41 +640,6 @@ class APEfeatures(APEfile):
 
 if __name__ == "__main__":
 	import time
-	#for symbol in ["Atp2c2","Plin4","Hist1h2bc","Peli2","Sspo","Tnk2","Kdm3b","Klhl12","Mmadhc"]:
-	#for symbol in ["Peli2","Sspo","Tnk2","Kdm3b","Klhl12","Mmadhc"]:
-	for symbol in ["Acad10","Aass","Cct5","Cox20","Ifit3","Mcm6"]:
-		filein=APEfile(symbol)
-		filein.findFile()
-		if filein.fileFound:
-			print "SYMBOL:",symbol+":"
-			print filein.APEgDNA
-			filein.readAPESequence()
-			filein.readAPEFeatures()
-			filein.PrimerSelect()
-			#print filein.upstream.start
-			#print filein.downstream.start
-			####In CreatePrimer3File, we will sometimes shorten the Sequence.
-			##		This must be reflected in the co-ordinates of the APE file features.
-			##		They should all be shorted by the distance to the upstream gRNA start point.
-			## 		i.e. gRNA_U5, gRNA_U, or gRNA_E2U(?)
-			filein.CreatePrimer3File()
-
-			filein.Primer3exe()
-			filein.GetPrimerLists()
-			if filein.ValidPairs:
-				#print filein.PrimerPair
-				print filein.Forward,filein.ForwardStart
-				print filein.Reverse,filein.ReverseStart
-				for k,j in filein.features.iteritems():
-					if filein.features[k].start > filein.ForwardStart and filein.features[k].end < filein.ReverseStart:
-						print "Amplifying",k,filein.features[k].start,filein.features[k].end
-
-			else:
-				print "FAILED TO FIND PRIMERS"
-			#break
-			time.sleep(4)
-			print "\n"
-			#break
 	for symbol in ["Tcf12"]:
 		filein=APEfile(symbol)
 		filein.findFile()
