@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 
 import string, re, sys
-<<<<<<< HEAD
-from subprocess import Popen.PIPE
-=======
 from subprocess import *
 #import Bio.Emboss.Primer3 as Primer3
 #from Bio.Emboss.Applications import Primer3Commandline
 
->>>>>>> newadd
 
 class Primer:
 	#PRIMER_TM_FORMULA=1 - refers to Santa Lucia JR (1998)
@@ -23,32 +19,10 @@ class Primer:
 PRIMER_TM_FORMULA=1
 PRIMER_SALT_CORRECTIONS=1
 PRIMER_OPT_SIZE=25
-<<<<<<< HEAD
-PRIMER_MIN_SIZE=22
-=======
->>>>>>> newadd
 PRIMER_MAX_SIZE=28
 P3_FILE_FLAG=1
 PRIMER_GC_CLAMP=1
 PRIMER_EXPLAIN_FLAG=1
-<<<<<<< HEAD
-PRIMER_MIN_GC=45
-PRIMER_MAX_GC=54
-PRIMER_OPT_GC=50
-PRIMER_MIN_TM=58
-PRIMER_MAX_TM=64
-PRIMER_OPT_TM=60
-PRIMER_MAX_NS_ACCEPTED=1
-PRIMER_MISPRIMING_LIBRARY=/home/clarkg/INSTALLS/primer3-2.3.7/src/humrep_and_simple.txt
-PRIMER_PRODUCT_SIZE_RANGE=150-250 251-500 501-750 751-1000 1001-1200
-"""
-		self.ENDFILE="="
-		self.HAIRPIN="PRIMER_MAX_HAIRPIN_TH=10"
-		self.SELF_TH="PRIMER_MAX_SELF_ANY_TH=10"
-		self.END_TH="PRIMER_MAX_SELF_END_TH=10"
-		self.MASKING="PRIMER_LOWERCASE_MASKING=1"
-
-=======
 PRIMER_OPT_GC=50
 PRIMER_OPT_TM=60
 PRIMER_MAX_NS_ACCEPTED=1
@@ -85,5 +59,4 @@ PRIMER_MISPRIMING_LIBRARY=/home/clarkg/INSTALLS/primer3-2.4.0/src/humrep_and_sim
 			##Now we're getting desperate
 			self.PRIMER_MIN_TM="PRIMER_MIN_TM=56\n"
 			self.PRIMER_MAX_TM="PRIMER_MAX_TM=66\n"
->>>>>>> newadd
 

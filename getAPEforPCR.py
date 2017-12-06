@@ -7,11 +7,7 @@ from primerDesign import Primer
 from subprocess import Popen, PIPE
 import operator
 
-<<<<<<< HEAD
-#import APEread
-=======
 
->>>>>>> newadd
 
 class APEfile:
 	if not glob.glob("/mnt/cmmr/"):
@@ -20,12 +16,9 @@ class APEfile:
 	misc=re.compile("[\W]+misc_feature[\W]+")
 	locus=re.compile("^[\W]+/locus_tag=")
 	label=re.compile("^[\W]+/label=")
-<<<<<<< HEAD
 	exonlabel=re.compile("^[\W]+exon[\W]+[(]{0,1}[0-9]{1,7}..[0-9]{1,7}")
-=======
 	exontag=re.compile("^[\W]+exon[\W]+[(]{0,1}[0-9]{1,7}..[0-9]{1,7}")
 	exonlabel=re.compile("^[\W]+/label=ENSMUSE")
->>>>>>> newadd
 	def __init__(self,symbol):
 		self.symbol=symbol
 		self.mountpoint="/mnt/cmmr/Cas9"
@@ -35,8 +28,6 @@ class APEfile:
 		self.coordinates=re.compile("[0-9]{1,7}..[0-9]{1,7}[)]{0,1}")
 		self.fileFound=False
 		self.feature_desc=""
-<<<<<<< HEAD
-=======
 		self.Attempt=0
 		self.ValidPairs=False
 
@@ -59,7 +50,6 @@ class APEfile:
 		io.write(pr.MASKING)
 		io.write(pr.ENDFILE)
 		io.close()
->>>>>>> newadd
 
 	def findFile(self):
 		self.possibleDIR+=glob.glob(os.path.join(self.mountpoint,"_IMPC_Mice",self.symbol+"*"))
@@ -88,18 +78,15 @@ class APEfile:
 			else:
 				self.APEgDNA=self.APEgDNA[0]
 				self.fileFound=True
-<<<<<<< HEAD
 				
 	def readAPESequence(self):
 		self.OriginStart=False
 		fullfile=open(self.APEgDNA,'r').readlines()
-=======
-				self.fullfile=open(self.APEgDNA,'r').readlines()
+		self.fullfile=open(self.APEgDNA,'r').readlines()
 
 	def readAPESequence(self):
 		self.OriginStart=False
 		fullfile=self.fullfile
->>>>>>> newadd
 		self.Sequence=""
 		for x,line in enumerate(fullfile):
 			if line.startswith("ORIGIN"):
@@ -108,9 +95,6 @@ class APEfile:
 				seqline=line.split()[1:]
 				if len(seqline):
 					self.Sequence+="".join(seqline)
-
-<<<<<<< HEAD
-=======
 
 
 	def RevSeq(self,sequence):
@@ -121,7 +105,6 @@ class APEfile:
 			rev.append(pairs[s])
 		return "".join(rev)
 
->>>>>>> newadd
 	def readAPEFeatures(self):
 		#self.OriginStart=False
 		fullfile=open(self.APEgDNA,'r').readlines()
@@ -139,8 +122,6 @@ class APEfile:
 					lcl_feature=APEfeatures(feature_name)
 					lcl_feature.grabFeatures(fullfile[x+1:])
 					self.features[lcl_feature.feature_desc]=lcl_feature
-<<<<<<< HEAD
-=======
 			elif self.exontag.match(line):
 				new_feature=line.strip().split()
 				if len(self.coordinates.findall(line)) == 1:
@@ -152,12 +133,10 @@ class APEfile:
 					lcl_feature=APEfeatures(feature_name)
 					lcl_feature.grabFeatures(fullfile[x+1:])
 					self.features[lcl_feature.feature_desc]=lcl_feature
->>>>>>> newadd
 				else:
 					print "COORDINATES MESSED"
 					print line
 					sys.exit()
-<<<<<<< HEAD
 			# elif line.startswith("ORIGIN"):
 			# 	self.OriginStart=True
 			# if self.OriginStart:
@@ -167,17 +146,10 @@ class APEfile:
 
 
 	def PrimerSelect(self):
-		#if "Ptype" == "WT":
-		#for k,j in self.features.iteritems():
-		print self.features.keys()
-=======
-
-	def PrimerSelect(self):
 
 		##We want to capture the largest potential cutsite
 		##	APE files have a variety of ways of defining gRNA sites (via the user)
 		##	So we are necessarily handcuffed here at defining these sites
->>>>>>> newadd
 		try:
 			self.upstream=self.features['gRNA_U5']
 			self.multiUP=True
@@ -218,12 +190,6 @@ class APEfile:
 			print self.features.keys()
 			sys.exit()
 
-<<<<<<< HEAD
-		#print upstream.direction,upstream.
-		#sys.exit()
-=======
->>>>>>> newadd
-
 		if self.multiUP:
 			self.wtStart=self.upstream.start
 			self.wtEnd=self.upstream2.end
@@ -235,17 +201,12 @@ class APEfile:
 		elif not self.multiUP and not self.multiDN:
 			self.wtStart=self.upstream.start
 			self.wtEnd=self.upstream.end
-<<<<<<< HEAD
-			#self.exclude=downstream.end
 
 	def CreatePrimer3File(self):
 			target_length=filein.wtEnd-filein.wtStart
 			pr=Primer(symbol)
 			if filein.wtStart > 2000:
 				initCUT=2000
-=======
-
-	
 
 	def CreatePrimer3File(self):
 	
@@ -255,21 +216,16 @@ class APEfile:
 			pr.updateParams(self.Attempt)
 			if filein.wtStart > 2000:
 				self.initCUT=2000
->>>>>>> newadd
 				self.upstreamCUT=filein.wtStart-2000
 
 			else:
 				self.upstreamCUT=0
-<<<<<<< HEAD
 				initCUT=filein.wtStart
-=======
 				self.initCUT=filein.wtStart
->>>>>>> newadd
 			if len(filein.Sequence) - filein.wtEnd > 2000:
 				downstreamCUT=filein.wtEnd+2000
 			else:
 				downstreamCUT=len(filein.Sequence)
-<<<<<<< HEAD
 
 			newSeq=filein.Sequence[(self.upstreamCUT):downstreamCUT]
 			pr.SEQUENCE_TEMPLATE+=newSeq+"\n"
@@ -287,11 +243,9 @@ class APEfile:
 			io.close()
 	
 	def Primer3exe(self):
-		print self.filename
 		cmd='/usr/bin/primer3_core < '+self.filename
 		p = Popen(cmd, shell=True,stdout=PIPE, stderr=PIPE)
 		stdout, stderr = p.communicate()
-		print stderr
 
 	def FormatPrimers(self):
 		# # sequence                       start ln  N   GC%     Tm any_th end_th   pin   sim   lity
@@ -313,7 +267,6 @@ class APEfile:
 		elif self.multiDN and not multiUP:
 			print "DO SOMETHING ABOUT THIS"
 		
-=======
 			newSeq=filein.Sequence[(self.upstreamCUT):downstreamCUT]
 			pr.SEQUENCE_TEMPLATE+=newSeq+"\n"
 			self.filename=os.path.join(os.getcwd(),symbol+"_em.txt")
@@ -406,7 +359,6 @@ class APEfile:
 				self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_U3'].start-self.upstreamCUT+200) and int(e.strip().split()[2]) < (self.downstream.start-self.upstreamCUT),self.ReverseFile)
 			elif self.multiDN and not multiUP:
 				pass
->>>>>>> newadd
 
 		for k in range(len(self.ForwardFile)):
 			fordata=self.ForwardFile[k].strip().split()
@@ -419,12 +371,9 @@ class APEfile:
 			fend_th=float(fend_th)
 			fhairpin=float(fhairpin)
 			fquality=float(fquality)
-<<<<<<< HEAD
 			FOR[frank+"_"+fsequence]=fordata
-=======
 			fsequence=fsequence.strip().upper()
 			self.FOR[fsequence]=fordata
->>>>>>> newadd
 
 			for l in range(len(self.ReverseFile)):
 				revdata=self.ReverseFile[l].strip().split()
@@ -439,23 +388,17 @@ class APEfile:
 				rend_th=float(rend_th)
 				rhairpin=float(rhairpin)
 				rquality=float(rquality)
-<<<<<<< HEAD
 				REV[rrank+"_"+rsequence]=revdata
-=======
 				rsequence=rsequence.strip().upper()
 				self.REV[rsequence]=revdata
->>>>>>> newadd
 				thermoScore=round(sum([rGC+fGC+rTm+fTm]),1)
 				structScore=round(sum([rend_th+rany_th+fend_th+rend_th+rhairpin+fhairpin]),1)
 
 				combinedquality=round(rquality+fquality,1)
 				distance=rstart-fstart
-<<<<<<< HEAD
 				if distance > 100 and distance < 1000  and combinedquality < 7 and thermoScore < 10 and structScore < 5:
 					#print combinedquality,distance, thermoScore,structScore,"\t",fstart,fsequence,"\t",rstart,rsequence
 					pairs.append([combinedquality,distance,thermoScore,structScore,fstart,fsequence,rstart,rsequence])
-=======
-
 				if self.PrimerType =="WT":
 					if distance > 200 and distance < 1000  and combinedquality < 10 and thermoScore < 10 and structScore < 10:
 						#print combinedquality,distance, thermoScore,structScore,"\t",fstart,fsequence,"\t",rstart,rsequence
@@ -465,7 +408,6 @@ class APEfile:
 					#print combinedquality,distance, thermoScore,structScore,"\t",fstart,fsequence,"\t",rstart,rsequence
 						pairs.append([combinedquality,distance,thermoScore,structScore,fstart,fsequence,rstart,rsequence])
 
->>>>>>> newadd
 		pairs=sorted(pairs,key=operator.itemgetter(0,2,3,1))
 		if not len(pairs):
 			self.ValidPairs=False
@@ -482,7 +424,6 @@ class APEfile:
 				self.Reverse=pairs[0][7]
 				self.ReverseStart=pairs[0][6] + self.upstreamCUT
 			self.ValidPairs=True
-<<<<<<< HEAD
 
 	def GetPrimerLists(self):
 		if os.path.exists(self.symbol+".for"):
@@ -492,8 +433,6 @@ class APEfile:
 			self.ForwardFile=False
 		if os.path.exists(self.symbol+".rev"):
 			self.ReverseFile=open(self.symbol+".rev",'r').readlines()
-=======
-		#for not self.ValidPairs:
 
 
 
@@ -556,7 +495,6 @@ class APEfile:
 			self.ForwardFile=False
 		if os.path.exists(revfile):
 			self.ReverseFile=open(revfile,'r').readlines()
->>>>>>> newadd
 			self.ReverseFile=self.ReverseFile[3:]
 		else:
 			self.ReverseFile=False
@@ -564,12 +502,8 @@ class APEfile:
 		if self.ForwardFile and self.ReverseFile:
 			# # sequence                       start ln  N   GC%     Tm any_th end_th   pin   sim   lity
 			self.FormatPrimers()
-<<<<<<< HEAD
-		
 		else:
 			self.ValidPairs=False
-
-=======
 		else:
 			self.ValidPairs=False
 
@@ -678,9 +612,6 @@ class APEfile:
 	#	sys.exit()
 
 
->>>>>>> newadd
-	
-
 class APEfeatures(APEfile):
 	def __init__(self,name):
 		self.name=name #this will be the locus first...then we change to gRNA_U5m,etc
@@ -694,28 +625,23 @@ class APEfeatures(APEfile):
 		#print start,end,direction
 		self.start=int(start)
 		self.end=int(end)
-<<<<<<< HEAD
 		#
 		print direction,filein.Sequence[self.start:self.end]
 		self.direction=direction
 		for x,line in enumerate(remaininglines):
-=======
 	
 		self.direction=direction
 		for x,line in enumerate(remaininglines):
 			if self.misc.match(line) or self.exontag.match(line) or line.startswith("ORIGIN"):
 				#just save time/space
 				break
->>>>>>> newadd
 			if self.locus.match(line):
 				self.feature_desc=line.strip().split("=")[1].strip("\"")
 			elif self.label.match(line):
 				self.feature_desc=line.strip().split("=")[1].strip("\"")
-<<<<<<< HEAD
 			if self.misc.match(line) or self.exonlabel.match(line) or line.startswith("ORIGIN"):
 				#just save time/space
 				break
-=======
 			elif self.exonlabel.match(line):
 				print "LINE HERE",line
 				self.feature_desc=line.strip().split("=")[1].strip("\"")
@@ -728,14 +654,11 @@ class APEfeatures(APEfile):
 			#print self.feature_desc,direction,filein.Sequence[(self.start-4):self.end]
 			self.cutsite=self.start+2
 
->>>>>>> newadd
-
 
 if __name__ == "__main__":
 	import time
 	#for symbol in ["Atp2c2","Plin4","Hist1h2bc","Peli2","Sspo","Tnk2","Kdm3b","Klhl12","Mmadhc"]:
 	#for symbol in ["Peli2","Sspo","Tnk2","Kdm3b","Klhl12","Mmadhc"]:
-<<<<<<< HEAD
 	for symbol in ["Acad10","Aass","Cct5","Cox20","Ifit3","Mcm6"]:
 		filein=APEfile(symbol)
 		filein.findFile()
@@ -769,7 +692,6 @@ if __name__ == "__main__":
 			time.sleep(4)
 			print "\n"
 			#break
-=======
 	for symbol in ["Tcf12"]:
 		filein=APEfile(symbol)
 		filein.findFile()
@@ -841,4 +763,3 @@ if __name__ == "__main__":
 				time.sleep(4)
 				print "\n"
 		break
->>>>>>> newadd
