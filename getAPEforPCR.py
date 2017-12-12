@@ -7,6 +7,13 @@ from primerDesign import Primer
 from subprocess import Popen, PIPE
 import operator
 
+#class PrimerPairs:
+#	def __init__(self):
+#		self.symbol=""
+#		self.PrimerType=""
+#		self.pairs={}=
+#		self.FORWARD=""
+#		self.Rever
 
 
 class APEfile:
@@ -30,26 +37,10 @@ class APEfile:
 		self.feature_desc=""
 		self.Attempt=0
 		self.ValidPairs=False
+		self.pairs={}
+		self.FOR={}
+		self.REV={}
 
-	def WriteFile(self,pr):
-		##pr is our primer instance. it should be changing with repeated attempts
-		io=open(self.filename,'w')
-		io.write(pr.SEQUENCE_ID+"\n")
-		io.write(pr.SEQUENCE_TEMPLATE)
-		io.write("SEQUENCE_TARGET="+str(self.initCUT)+","+str(self.target_length)+"\n")
-		io.write(pr.GENERIC_PARAMS)
-		io.write(pr.PRIMER_MIN_GC)
-		io.write(pr.PRIMER_MAX_GC)
-		io.write(pr.PRIMER_MIN_SIZE)
-		io.write(pr.HAIRPIN)
-		io.write(pr.SELF_TH)
-		io.write(pr.END_TH)
-		io.write(pr.PRIMER_MIN_TM)
-		io.write(pr.PRIMER_MAX_TM)
-		io.write(pr.PRIMER_PRODUCT_SIZE_RANGE)
-		io.write(pr.MASKING)
-		io.write(pr.ENDFILE)
-		io.close()
 
 	def findFile(self):
 		self.possibleDIR+=glob.glob(os.path.join(self.mountpoint,"_IMPC_Mice",self.symbol+"*"))
@@ -148,21 +139,29 @@ class APEfile:
 		##	So we are necessarily handcuffed here at defining these sites
 		try:
 			self.upstream=self.features['gRNA_U5']
+			self.upstreamcut=self.features['gRNA_U5'].cutsite
 			self.multiUP=True
 			self.upstream2=self.features['gRNA_U3']
+			#self.downstreamcut=self.features['gRNA_U3'].cutsite
 		except KeyError:
 			try:
 				self.upstream=self.features['gRNA_U']
+				self.upstreamcut=self.features['gRNA_U'].cutsite
 				self.multiUP=False
 			except KeyError:
 				pass
 		try:
 			self.downstream=self.features['gRNA_D5']
 			self.multiDN=True
+
 			self.downstream2=self.features['gRNA_D3']
+			self.downstreamcut=self.features['gRNA_D3'].cutsite
+
 		except KeyError:
 			try:
 				self.downstream=self.features['gRNA_D']
+				self.downstreamcut=self.features['gRNA_D'].cutsite
+
 				self.multiDN=False
 			except KeyError:
 				pass
@@ -198,126 +197,86 @@ class APEfile:
 			self.wtStart=self.upstream.start
 			self.wtEnd=self.upstream.end
 
+		try:
+	 		firstcut=filein.upstream.cutsite
+	 		secondcut=filein.downstream2.cutsite
+	 	except AttributeError:
+	 		secondcut=filein.downstream.cutsite
+	 	self.delSize=secondcut-firstcut		
 
-	def CreatePrimer3File(self):
-	
+
+	def CreatePrimer3File(self,pr):
+		#print self.PrimerType
+		#pr=Primer(symbol)
+
+		#cutdistance=abs(filein.downstreamcut-filein.upstreamcut)
+		#sys.exit()
+
 		if self.PrimerType == "WT":
 			self.target_length=filein.wtEnd-filein.wtStart
-			pr=Primer(symbol)
-			pr.updateParams(self.Attempt)
-			if filein.wtStart > 2000:
-				self.initCUT=2000
-				self.upstreamCUT=filein.wtStart-2000
-
-			else:
-				self.upstreamCUT=0
-				self.initCUT=filein.wtStart
-				self.initCUT=filein.wtStart
-			if len(filein.Sequence) - filein.wtEnd > 2000:
-				downstreamCUT=filein.wtEnd+2000
-			else:
-				downstreamCUT=len(filein.Sequence)
-
-			newSeq=filein.Sequence[(self.upstreamCUT):downstreamCUT]
-			pr.SEQUENCE_TEMPLATE+=newSeq+"\n"
-			self.filename=os.path.join(os.getcwd(),symbol+".txt")
-			io=open(self.filename,'w')
-			io.write(pr.SEQUENCE_ID+"\n")
-			io.write(pr.SEQUENCE_TEMPLATE)
-			io.write("SEQUENCE_TARGET="+str(self.initCUT)+","+str(self.target_length)+"\n")
-			io.write(pr.GENERIC_PARAMS)
-			io.write(pr.HAIRPIN+"\n")
-			io.write(pr.SELF_TH+"\n")
-			io.write(pr.END_TH+"\n")
-			io.write(pr.MASKING+"\n")
-			io.write(pr.ENDFILE)
-			io.close()
-	
-	def Primer3exe(self):
-		cmd='/usr/bin/primer3_core < '+self.filename
-		p = Popen(cmd, shell=True,stdout=PIPE, stderr=PIPE)
-		stdout, stderr = p.communicate()
-
-	def FormatPrimers(self):
-		# # sequence                       start ln  N   GC%     Tm any_th end_th   pin   sim   lity
-		FOR={}
-		REV={}
-		pairs=[]
-
-		if self.multiUP and self.multiDN:
-			##most common case
-		 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].start - self.upstreamCUT),self.ForwardFile)
-		 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_U3'].end - self.upstreamCUT) and int(e.strip().split()[2]) < (self.features['gRNA_D5'].end - self.upstreamCUT),self.ReverseFile) 
-		elif not self.multiUP and not self.multiDN:
-		 	##second most common
-		 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.upstream.start-self.upstreamCUT),self.ForwardFile)
-		 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) < (self.downstream.start -self.upstreamCUT),self.ReverseFile)
-		elif self.multiUP and not self.multiDN:
-			self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].start-self.upstreamCUT),self.ForwardFile)
-			self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_U3'].start-self.upstreamCUT) and int(e.strip().split()[2]) < (self.downstream.start-self.upstreamCUT),self.ReverseFile)
-		elif self.multiDN and not multiUP:
-			print "DO SOMETHING ABOUT THIS"
-		
-			newSeq=filein.Sequence[(self.upstreamCUT):downstreamCUT]
-			pr.SEQUENCE_TEMPLATE+=newSeq+"\n"
-			self.filename=os.path.join(os.getcwd(),symbol+"_em.txt")
-			self.delSize = 0
-
-
 		elif self.PrimerType == "EM":
-			try:
-				firstcut=filein.upstream.cutsite
-				secondcut=filein.downstream2.cutsite
-			except AttributeError:
-				secondcut=filein.downstream.cutsite
+			self.target_length=self.delSize
+			pr.PRIMER_PRODUCT_SIZE_RANGE="PRIMER_PRODUCT_SIZE_RANGE=150-3500\n"
 
-			delSize=secondcut-firstcut
-			#print "Deletion size is = %s" % (delSize,)
-			self.target_length=delSize	##to ensure we are 200 bp away from either cut site
-			pr=Primer(symbol+"_em")
+		pr.updateParams(self.Attempt)
+	#	print self.Attempt
+		#print pr.
+		if filein.wtStart > 2000:
+			self.initCUT=2000
+			self.upstreamCUT=filein.wtStart-2000
 
-			pr.updateParams(self.Attempt)
+		else:
+			self.upstreamCUT=0
+			self.initCUT=filein.wtStart
 
-			#delSize=wtEnd-wtStart
-			if filein.wtStart > 2000:
-				self.initCUT=1800
-				self.upstreamCUT=filein.wtStart-2000
+		#print "WT Start", filein.wtStart
+		#print "INITCUT", self.initCUT
+		#print self.upstreamCUT
+		#print "first cut", self.upstream.cutsite	
+#		sys.exit()
+		if len(filein.Sequence) - filein.wtEnd > 3000:
+			downstreamCUT=filein.wtEnd+3000
+		else:
+			downstreamCUT=len(filein.Sequence)
 
-			else:
-				self.upstreamCUT=0
-				self.initCUT=filein.wtStart-200
+		newSeq=filein.Sequence[(self.upstreamCUT):downstreamCUT]
+		#print "\n",newSeq[:50],"\n\n"
+		#sys.exit()
+		pr.SEQUENCE_TEMPLATE="SEQUENCE_TEMPLATE="+newSeq+"\n"
+		#print self.Primerself.initCUT,self.target_length
+		#print self.PrimerType, self.initCUT
+		self.filename=os.path.join(os.getcwd(),symbol+"_"+self.PrimerType+".txt")
+		io=open(self.filename,'w')
+		io.write(pr.SEQUENCE_ID+"\n")
+		io.write(pr.SEQUENCE_TEMPLATE)
+		io.write("SEQUENCE_TARGET="+str(self.initCUT)+","+str(self.target_length)+"\n")
+		io.write(pr.GENERIC_PARAMS)
+		io.write(pr.HAIRPIN)
+		io.write(pr.SELF_TH)
+		io.write(pr.END_TH)
+		io.write(pr.PRIMER_MIN_GC)
+		io.write(pr.PRIMER_MAX_GC)
+		io.write(pr.PRIMER_MIN_SIZE)
+		io.write(pr.PRIMER_MIN_TM)
+		io.write(pr.PRIMER_MAX_TM)
+		io.write(pr.PRIMER_PRODUCT_SIZE_RANGE)
+		io.write(pr.MASKING)
+		io.write(pr.ENDFILE)
+		io.close()
+		#else:
 
-			if len(filein.Sequence) - filein.wtEnd > 3000:
-				self.downstreamCUT=filein.wtEnd+3000
-				#print filein.wtEnd,"WE RIGHT HERE"
-			else:
-				self.downstreamCUT=len(filein.Sequence)	
-
-		#	print self.initCUT
-			self.delSize=delSize
-			maxSize=delSize+2000
-		#	sys.exit()
-			newrange=str(100)+"-"+str(maxSize)+"\n"
-			#print maxSize
-			pr.PRIMER_PRODUCT_SIZE_RANGE="PRIMER_PRODUCT_SIZE_RANGE= "+newrange
-			newSeq=filein.Sequence[(self.upstreamCUT):self.downstreamCUT]
-			#print newSeq
-			#sys.exit()
-			pr.SEQUENCE_TEMPLATE+=newSeq+"\n"
-			self.filename=os.path.join(os.getcwd(),symbol+"_em.txt")
-		filein.WriteFile(pr)
 
 	def Primer3exe(self):
-		#print self.filename
+	#	print self.filename
 		cmd='/usr/bin/primer3_core < '+self.filename
 		p = Popen(cmd, shell=True,stdout=PIPE, stderr=PIPE)
 		stdout, stderr = p.communicate()
 		#print stderr
 
-	def FormatPrimers(self):
+	def FilterPrimers(self):
 		# # sequence                       start ln  N   GC%     Tm any_th end_th   pin   sim   lity
-		self.FOR={}
-		self.REV={}
+	#	self.FOR={}
+	#	self.REV={}
 		pairs=[]
 
 		if self.PrimerType == "WT":
@@ -339,17 +298,18 @@ class APEfile:
 		elif self.PrimerType == "EM":
 			if self.multiUP and self.multiDN:
 				##most common case
-			 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].start - self.upstreamCUT-200),self.ForwardFile)
-			 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_D5'].end - self.upstreamCUT+200),self.ReverseFile) 
+			 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].start - self.upstreamCUT),self.ForwardFile)
+			 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_D5'].end - self.upstreamCUT),self.ReverseFile) 
 			elif not self.multiUP and not self.multiDN:
 			 	##second most common
-			 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.upstream.start-self.upstreamCUT-200),self.ForwardFile)
-			 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.downstream.start -self.upstreamCUT+200),self.ReverseFile)
+			 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.upstream.start-self.upstreamCUT),self.ForwardFile)
+			 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.downstream.start -self.upstreamCUT),self.ReverseFile)
 			elif self.multiUP and not self.multiDN:
-				self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].start-self.upstreamCUT-200),self.ForwardFile)
-				self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_U3'].start-self.upstreamCUT+200) and int(e.strip().split()[2]) < (self.downstream.start-self.upstreamCUT),self.ReverseFile)
+				self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].start-self.upstreamCUT),self.ForwardFile)
+				self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_U3'].start-self.upstreamCUT) and int(e.strip().split()[2]) < (self.downstream.start-self.upstreamCUT),self.ReverseFile)
 			elif self.multiDN and not multiUP:
 				pass
+
 
 		for k in range(len(self.ForwardFile)):
 			fordata=self.ForwardFile[k].strip().split()
@@ -385,43 +345,36 @@ class APEfile:
 
 				combinedquality=round(rquality+fquality,1)
 				distance=rstart-fstart
-				if distance > 100 and distance < 1000  and combinedquality < 7 and thermoScore < 10 and structScore < 5:
+			#	if distance > 100 and distance < 1000  and combinedquality < 7 and thermoScore < 10 and structScore < 5:
 					#print combinedquality,distance, thermoScore,structScore,"\t",fstart,fsequence,"\t",rstart,rsequence
-					pairs.append([combinedquality,distance,thermoScore,structScore,fstart,fsequence,rstart,rsequence])
+			#		pairs.append([combinedquality,distance,thermoScore,structScore,fstart,fsequence,rstart,rsequence])
 				if self.PrimerType =="WT":
 					if distance > 200 and distance < 1000  and combinedquality < 10 and thermoScore < 10 and structScore < 10:
 						#print combinedquality,distance, thermoScore,structScore,"\t",fstart,fsequence,"\t",rstart,rsequence
 						pairs.append([combinedquality,distance,thermoScore,structScore,fstart,fsequence,rstart,rsequence])
 				elif self.PrimerType=="EM":
-					if distance > 200 and distance < (1000+ self.delSize)  and combinedquality < 10 and thermoScore < 10 and structScore < 10:
+					if distance > 200 and distance < (1000+ self.delSize+200)  and combinedquality < 15 and thermoScore < 15 and structScore < 15:
 					#print combinedquality,distance, thermoScore,structScore,"\t",fstart,fsequence,"\t",rstart,rsequence
 						pairs.append([combinedquality,distance,thermoScore,structScore,fstart,fsequence,rstart,rsequence])
 
 		pairs=sorted(pairs,key=operator.itemgetter(0,2,3,1))
+		#self.pairs[{self.PrimerType}=pairs]
 		if not len(pairs):
 			self.ValidPairs=False
 		else:
-			self.PrimerPair=pairs[0]
-			if pairs[0][4] > pairs[0][6]:
-				self.Forward=pairs[0][7]
-				self.ForwardStart=pairs[0][6]+ self.upstreamCUT
-				self.Reverse=pairs[0][5]
-				self.ReverseStart=pairs[0][4]+ self.upstreamCUT
-			else:
-				self.Forward=pairs[0][5]
-				self.ForwardStart=pairs[0][4]+ self.upstreamCUT
-				self.Reverse=pairs[0][7]
-				self.ReverseStart=pairs[0][6] + self.upstreamCUT
+			#self.PrimerPair=pairs[0]
+			self.pairs[self.PrimerType]=pairs
+			#if pairs[0][4] > pairs[0][6]:
+			#	self.Forward=pairs[0][7]
+			#	self.ForwardStart=pairs[0][6]+ self.upstreamCUT
+			#	self.Reverse=pairs[0][5]
+			#	self.ReverseStart=pairs[0][4]+ self.upstreamCUT
+			#else:
+			#	self.Forward=pairs[0][5]
+			#	self.ForwardStart=pairs[0][4]+ self.upstreamCUT
+			#	self.Reverse=pairs[0][7]
+			#	self.ReverseStart=pairs[0][6] + self.upstreamCUT
 			self.ValidPairs=True
-
-	def GetPrimerLists(self):
-		if os.path.exists(self.symbol+".for"):
-			self.ForwardFile=open(self.symbol+".for",'r').readlines()
-			self.ForwardFile=self.ForwardFile[3:]
-		else:
-			self.ForwardFile=False
-		if os.path.exists(self.symbol+".rev"):
-			self.ReverseFile=open(self.symbol+".rev",'r').readlines()
 
 
 
@@ -470,12 +423,12 @@ class APEfile:
 			self.originPoint+=1	
 
 	def GetPrimerLists(self):
-		if self.PrimerType == "WT":
-			forfile=self.symbol+".for"
-			revfile=self.symbol+".rev"
-		elif self.PrimerType == "EM":
-			forfile=self.symbol+"_em.for"
-			revfile=self.symbol+"_em.rev"
+		#if self.PrimerType == "WT":
+		forfile=self.symbol+".for"
+		revfile=self.symbol+".rev"
+		#elif self.PrimerType == "EM":
+		#	forfile=self.symbol+"_em.for"
+		#	revfile=self.symbol+"_em.rev"
 
 		if os.path.exists(forfile):
 			self.ForwardFile=open(forfile,'r').readlines()
@@ -490,7 +443,7 @@ class APEfile:
 	
 		if self.ForwardFile and self.ReverseFile:
 			# # sequence                       start ln  N   GC%     Tm any_th end_th   pin   sim   lity
-			self.FormatPrimers()
+			self.FilterPrimers()
 		else:
 			self.ValidPairs=False
 
@@ -517,6 +470,26 @@ class APEfile:
 				sys.exit()
 		return [complement,position]
 
+
+
+	def PickPrimers(self):
+		cnt=0
+		passed=[]
+		for em in self.pairs['EM']:
+			#absPositionA=p.
+			emP,emF=em[4],em[5]
+			for wt in self.pairs['WT']:
+				wtP,wtF=wt[4],wt[5]
+				if wtF == emF and emF not in passed:
+					print "PAIR",em
+					passed.append(emF)
+					#break
+					print self.upstreamCUT+int(em[4])-1,self.upstream.cutsite#,self.upstreamCUT+int(em[6])-1,"\n"
+					absPosition=self.upstream.cutsite - (self.upstreamCUT+int(em[4])-1)
+					print absPosition
+					cnt+=1
+			if cnt > 50:
+				break
 
 	def CommitFile(self):
 		#self.fullfile=open(self.APEgDNA,'r').readlines()
@@ -546,9 +519,10 @@ class APEfile:
 		#print self.Sequence
 		#upseq=
 		##Lets add the location that WE find for the features
-
-		self.FOR[self.Forward]+=self.LocatePrimer(self.Forward)
-		self.REV[self.Reverse]+=self.LocatePrimer(self.Reverse)
+		forwardstats+=self.LocatePrimer(self.Forward)
+		self.FOR[self.Forward]=forwardstats
+		reversestats+=self.LocatePrimer(self.Reverse)
+		self.REV[self.Reverse]=reversestats
 
 
 		self.InsertLine("""COMMENT     \n""")			
@@ -558,12 +532,26 @@ class APEfile:
 		else:
 			self.InsertLine("""COMMENT     Deletion PCR:\n""")
 
-		self.InsertLine("""COMMENT     OLIGO     start     len     tm     gc%     any_th     3'th     hairpin     seq\n""")
+		self.InsertLine("""COMMENT     OLIGO     start     len     tm     gc%     any_th     3'th     hairpin     seq(5' to 3')\n""")
+		#print forwardstats[-2]
+		if forwardstats[-2] == True:
+			forward5to3=self.RevSeq(self.Forward)
+		else:
+			forward5to3=str(self.Forward)
+		print forward5to3 
+
+
+		if reversestats[-2] == True:
+			reverse5to3=self.RevSeq(self.Reverse)
+		else:
+			reverse5to3=self.Reverse
+
+
 		self.InsertLine("""COMMENT     LEFT       %s      %s     %s     %s     %s      %s     %s    %s\n""" 
-			% (str(self.ForwardStart),forwardstats[3],forwardstats[6],forwardstats[5],forwardstats[7],forwardstats[8],forwardstats[9],forwardstats[1]) )
+			% (str(self.ForwardStart),forwardstats[3],forwardstats[6],forwardstats[5],forwardstats[7],forwardstats[8],forwardstats[9],forward5to3) )
 
 		self.InsertLine("""COMMENT     RIGHT      %s      %s     %s     %s     %s      %s     %s    %s\n""" 
-			% (str(self.ReverseStart),reversestats[3],reversestats[6],reversestats[5],reversestats[7],reversestats[8],reversestats[9],reversestats[1])       )
+			% (str(self.ReverseStart),reversestats[3],reversestats[6],reversestats[5],reversestats[7],reversestats[8],reversestats[9],reverse5to3)       )
 		self.InsertLine("""COMMENT     \n""")			
 
 		gRNA_only=filter(lambda p: re.search("gRNA",p),self.features)
@@ -640,74 +628,72 @@ class APEfeatures(APEfile):
 
 if __name__ == "__main__":
 	import time
-	for symbol in ["Tcf12"]:
+	for symbol in ["Sept11","Zcwpw1"]:
 		filein=APEfile(symbol)
 		filein.findFile()
+
+		filein.readAPESequence()
+		filein.readAPEFeatures()
+		#print filein.APEgDNA,primertype
+		filein.ValidPairs=False
+		filein.PrimerSelect()
 
 		if filein.fileFound:
 			print "SYMBOL:",symbol+":"
 			filein.symbol=symbol
 			for primertype in ["WT","EM"]:
-				filein.readAPESequence()
-				filein.readAPEFeatures()
-				#print filein.APEgDNA,primertype
-				filein.ValidPairs=False
 				filein.PrimerType=primertype
-				filein.PrimerSelect()
-				#print filein.upstream.start
-				#print filein.downstream.start
 				####In CreatePrimer3File, we will sometimes shorten the Sequence.
 				##		This must be reflected in the co-ordinates of the APE file features.
 				##		They should all be shorted by the distance to the upstream gRNA start point.
 				## 		i.e. gRNA_U5, gRNA_U, or gRNA_E2U(?)
+				pr=Primer(symbol)
+
 				while filein.Attempt < 5 and not filein.ValidPairs:
 					if filein.Attempt > 1:
 						print "Changed Primer Parameters, stage %s" % (filein.Attempt)
-					filein.CreatePrimer3File()
+					##Create input file for primer3_core
+					filein.CreatePrimer3File(pr)
+					##Make the call out to primer 3
 					filein.Primer3exe()
+					##Retrieve primer3 output
 					filein.GetPrimerLists()
+					## if no valid pairs, we will change parameters and continue
 					filein.Attempt+=1
+				## We have either found the primers and can proceed or not found them, either way, reset
+				filein.ValidPairs=False
+		###At this point we have a list of EM and WT primers
+		###Lets look at these in a co-ordinated fashion to come up with ideal pairs
+		filein.PickPrimers()
+		#for p,j in filein.pairs.iteritems():
+		#	cols=zip(*j)
+		#	print p,len(j),cols[6][:100]
 
+			# if filein.ValidPairs:
+			# 	#if filein.Attempt > 1:
+			# 	#	print "Primer parameters for %s changed, %s attempts passed.\n" % (primertype,filein.Attempt)
+			# 	#print filein.PrimerPair
+			# 	print primertype+" Forward",filein.Forward,filein.ForwardStart,"\t",filein.upstream.cutsite
+			# 	print primertype+" Reverse",filein.Reverse,filein.ReverseStart,"\t",filein.downstream.cutsite
 
-				if filein.ValidPairs:
-					if filein.Attempt > 1:
-						print "Primer parameters for %s changed, %s attempts passed.\n" % (primertype,filein.Attempt)
-					#print filein.PrimerPair
-					print primertype+" Forward",filein.Forward,filein.ForwardStart,"\t",filein.upstream.cutsite
-					print primertype+" Reverse",filein.Reverse,filein.ReverseStart,"\t",filein.downstream.cutsite
-					try:
-						firstcut=filein.upstream.cutsite
-						secondcut=filein.downstream2.cutsite
-					except AttributeError:
-						secondcut=filein.downstream.cutsite
+			# 	try:
+			# 		firstcut=filein.upstream.cutsite
+			# 		secondcut=filein.downstream2.cutsite
+			# 	except AttributeError:
+			# 		secondcut=filein.downstream.cutsite
 
-					filein.delSize=secondcut-firstcut
-					if primertype == "WT":
-						filein.WTproduct=abs(filein.ReverseStart- filein.ForwardStart) +1
-					if primertype == "EM":
-						filein.WTEMproduct=abs(filein.ReverseStart - filein.ForwardStart) +1
-						filein.EMproduct=abs(filein.ReverseStart - filein.ForwardStart) - filein.delSize +1
-					#print "%s PRODUCT SIZE = %s" % (primertype,product)
-					filein.delSeq=filein.Sequence[:firstcut]+filein.Sequence[secondcut:]
-					filein.CommitFile()
-					#filein.Valid
-					#print filein.PrimerType,delSize
-	
-					# gRNA_only=filter(lambda p: re.search("gRNA",p),filein.features)
-					# print gRNA_only
-					# for g1 in range(len(gRNA_only)):
-					# 	for g2 in range(g1,len(gRNA_only)):
+			# 	filein.delSize=secondcut-firstcut
+			# 	if primertype == "WT":
+			# 		filein.WTproduct=abs(filein.ReverseStart- filein.ForwardStart) +1
+			# 	if primertype == "EM":
+			# 		filein.WTEMproduct=abs(filein.ReverseStart - filein.ForwardStart) +1
+			# 		filein.EMproduct=abs(filein.ReverseStart - filein.ForwardStart) - filein.delSize +1
+			# 	#print "%s PRODUCT SIZE = %s" % (primertype,product)
+			# 	filein.delSeq=filein.Sequence[:firstcut]+filein.Sequence[secondcut:]
+			# 	filein.CommitFile()
 
-					# 	print g,filein.features[g].cutsite
-					#for k,j in filein.features.iteritems():
-					#	pass
-					#	if filein.features[k].start >= firstcut:
-					 	#print "Redefine feature",delSize,k,filein.features[k].start-delSize,filein.features[k].end-delSize
-					# 	if re.search("gRNA",k) and (filein.features[k].start > filein.ForwardStart and filein.features[k].end < filein.ReverseStart):
-					# 		print "Amplifying",k,filein.features[k].start,filein.features[k].end
-
-				else:
-					print "FAILED TO FIND PRIMERS After much effort"
-				time.sleep(4)
-				print "\n"
-		break
+			# else:
+			# 	print "FAILED TO FIND PRIMERS After much effort"
+			# time.sleep(4)
+			#print "\n"
+		#break
