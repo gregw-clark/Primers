@@ -6,14 +6,9 @@ import subprocess
 from primerDesign import Primer
 from subprocess import Popen, PIPE
 import operator
+from collections import defaultdict
 
-#class PrimerPairs:
-#	def __init__(self):
-#		self.symbol=""
-#		self.PrimerType=""
-#		self.pairs={}=
-#		self.FORWARD=""
-#		self.Rever
+
 
 
 class APEfile:
@@ -283,30 +278,30 @@ class APEfile:
 
 			if self.multiUP and self.multiDN:
 				##most common case
-			 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].start - self.upstreamCUT),self.ForwardFile)
-			 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_U3'].end - self.upstreamCUT) and int(e.strip().split()[2]) < (self.features['gRNA_D5'].end - self.upstreamCUT),self.ReverseFile) 
+			 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].cutsite - self.upstreamCUT-200),self.ForwardFile)
+			 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_U3'].cutsite - self.upstreamCUT+200) and int(e.strip().split()[2]) < (self.features['gRNA_D5'].cutsite - self.upstreamCUT-200),self.ReverseFile) 
 			elif not self.multiUP and not self.multiDN:
 			 	##second most common
-			 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.upstream.start-self.upstreamCUT),self.ForwardFile)
-			 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) < (self.downstream.start -self.upstreamCUT),self.ReverseFile)
+			 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.upstream.cutsite-self.upstreamCUT-200),self.ForwardFile)
+			 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) < (self.downstream.cutsite -self.upstreamCUT+200),self.ReverseFile)
 			elif self.multiUP and not self.multiDN:
-				self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].start-self.upstreamCUT),self.ForwardFile)
-				self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_U3'].start-self.upstreamCUT) and int(e.strip().split()[2]) < (self.downstream.start-self.upstreamCUT),self.ReverseFile)
+				self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].cutsite-self.upstreamCUT-200),self.ForwardFile)
+				self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_U3'].cutsite-self.upstreamCUT+200) and int(e.strip().split()[2]) < (self.downstream.cutsite-self.upstreamCUT-200),self.ReverseFile)
 			elif self.multiDN and not multiUP:
 				print "DO SOMETHING ABOUT THIS"
 
 		elif self.PrimerType == "EM":
 			if self.multiUP and self.multiDN:
 				##most common case
-			 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].start - self.upstreamCUT),self.ForwardFile)
-			 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_D5'].end - self.upstreamCUT),self.ReverseFile) 
+			 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].cutsite - self.upstreamCUT-200),self.ForwardFile)
+			 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_D5'].cutsite - self.upstreamCUT+200),self.ReverseFile) 
 			elif not self.multiUP and not self.multiDN:
 			 	##second most common
-			 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.upstream.start-self.upstreamCUT),self.ForwardFile)
-			 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.downstream.start -self.upstreamCUT),self.ReverseFile)
+			 	self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.upstream.cutsite-self.upstreamCUT-200),self.ForwardFile)
+			 	self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.downstream.cutsite -self.upstreamCUT+200),self.ReverseFile)
 			elif self.multiUP and not self.multiDN:
-				self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].start-self.upstreamCUT),self.ForwardFile)
-				self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_U3'].start-self.upstreamCUT) and int(e.strip().split()[2]) < (self.downstream.start-self.upstreamCUT),self.ReverseFile)
+				self.ForwardFile=filter(lambda s: int(s.strip().split()[2]) < (self.features['gRNA_U5'].cutsite-self.upstreamCUT-200),self.ForwardFile)
+				self.ReverseFile=filter(lambda e: int(e.strip().split()[2]) > (self.features['gRNA_U3'].cutsite-self.upstreamCUT+200) and int(e.strip().split()[2]) < (self.downstream.start-self.upstreamCUT - 200),self.ReverseFile)
 			elif self.multiDN and not multiUP:
 				pass
 
@@ -322,59 +317,47 @@ class APEfile:
 			fend_th=float(fend_th)
 			fhairpin=float(fhairpin)
 			fquality=float(fquality)
-			fsequence=fsequence.strip().upper()
-			self.FOR[fsequence]=fordata
+			if all(map(lambda l: float(l) < 10,[fany_th,fend_th,fhairpin])):
+				fsequence=fsequence.strip().upper()
+				self.FOR[fsequence]=fordata
 
-			for l in range(len(self.ReverseFile)):
-				revdata=self.ReverseFile[l].strip().split()
+				for l in range(len(self.ReverseFile)):
+					revdata=self.ReverseFile[l].strip().split()
 
-				rrank,rsequence,rstart,rlength,rN,rGC,rTm,rany_th,rend_th,rhairpin,rlibsim,rquality=revdata
-				rstart=int(rstart)
-				#if rstart < self.downstream:
-				rGC=abs(50-float(rGC))
-				rTm=abs(60-float(rTm))
-				rlength=abs(25-int(rlength))
-				rany_th=float(rany_th)
-				rend_th=float(rend_th)
-				rhairpin=float(rhairpin)
-				rquality=float(rquality)
-				rsequence=rsequence.strip().upper()
-				self.REV[rsequence]=revdata
-				thermoScore=round(sum([rGC+fGC+rTm+fTm]),1)
-				structScore=round(sum([rend_th+rany_th+fend_th+rend_th+rhairpin+fhairpin]),1)
+					rrank,rsequence,rstart,rlength,rN,rGC,rTm,rany_th,rend_th,rhairpin,rlibsim,rquality=revdata
+					rstart=int(rstart)
+					rGC=abs(50-float(rGC))
+					rTm=abs(60-float(rTm))
+					rlength=abs(25-int(rlength))
+					rany_th=float(rany_th)
+					rend_th=float(rend_th)
+					rhairpin=float(rhairpin)
+					rquality=float(rquality)
 
-				combinedquality=round(rquality+fquality,1)
-				distance=rstart-fstart
-			#	if distance > 100 and distance < 1000  and combinedquality < 7 and thermoScore < 10 and structScore < 5:
-					#print combinedquality,distance, thermoScore,structScore,"\t",fstart,fsequence,"\t",rstart,rsequence
-			#		pairs.append([combinedquality,distance,thermoScore,structScore,fstart,fsequence,rstart,rsequence])
-				if self.PrimerType =="WT":
-					if distance > 200 and distance < 1000  and combinedquality < 10 and thermoScore < 10 and structScore < 10:
-						#print combinedquality,distance, thermoScore,structScore,"\t",fstart,fsequence,"\t",rstart,rsequence
-						pairs.append([combinedquality,distance,thermoScore,structScore,fstart,fsequence,rstart,rsequence])
-				elif self.PrimerType=="EM":
-					if distance > 200 and distance < (1000+ self.delSize+200)  and combinedquality < 15 and thermoScore < 15 and structScore < 15:
-					#print combinedquality,distance, thermoScore,structScore,"\t",fstart,fsequence,"\t",rstart,rsequence
-						pairs.append([combinedquality,distance,thermoScore,structScore,fstart,fsequence,rstart,rsequence])
+					if all(map(lambda l: float(l) < 10,[rany_th,rend_th,rhairpin])):
+						rsequence=rsequence.strip().upper()
+						self.REV[rsequence]=revdata
 
-		pairs=sorted(pairs,key=operator.itemgetter(0,2,3,1))
-		#self.pairs[{self.PrimerType}=pairs]
+						thermoScore=int(sum([rGC+fGC+rTm+fTm]))
+						structScore=round(sum([rend_th+rany_th+fend_th+rend_th+rhairpin+fhairpin]),1)
+					 	combinedquality=round(rquality+fquality,1)
+					 	distance=rstart-fstart
+					 #	print structScore,thermoScore
+					 	if self.PrimerType =="WT":
+					 		if distance > 200 and distance < 1000  and combinedquality < 15 and thermoScore < 10 and structScore < 10:
+					 			pairs.append([int(combinedquality),distance,thermoScore,structScore,fstart,fsequence,rstart,rsequence])
+					 	elif self.PrimerType=="EM":
+					 		if distance > 200 and distance < (1000+ self.delSize+200)  and combinedquality < 15 and thermoScore < 10 and structScore < 10:
+					 			pairs.append([int(combinedquality),distance,thermoScore,structScore,fstart,fsequence,rstart,rsequence])
+
+
+		### We will select pairs first and then see if we can find a common WT/EM primer 
+		pairs=sorted(pairs,key=operator.itemgetter(0,3,2,1))
 		if not len(pairs):
 			self.ValidPairs=False
 		else:
-			#self.PrimerPair=pairs[0]
-			self.pairs[self.PrimerType]=pairs
-			#if pairs[0][4] > pairs[0][6]:
-			#	self.Forward=pairs[0][7]
-			#	self.ForwardStart=pairs[0][6]+ self.upstreamCUT
-			#	self.Reverse=pairs[0][5]
-			#	self.ReverseStart=pairs[0][4]+ self.upstreamCUT
-			#else:
-			#	self.Forward=pairs[0][5]
-			#	self.ForwardStart=pairs[0][4]+ self.upstreamCUT
-			#	self.Reverse=pairs[0][7]
-			#	self.ReverseStart=pairs[0][6] + self.upstreamCUT
 			self.ValidPairs=True
+			self.pairs[self.PrimerType]=pairs
 
 
 
@@ -423,12 +406,9 @@ class APEfile:
 			self.originPoint+=1	
 
 	def GetPrimerLists(self):
-		#if self.PrimerType == "WT":
+
 		forfile=self.symbol+".for"
 		revfile=self.symbol+".rev"
-		#elif self.PrimerType == "EM":
-		#	forfile=self.symbol+"_em.for"
-		#	revfile=self.symbol+"_em.rev"
 
 		if os.path.exists(forfile):
 			self.ForwardFile=open(forfile,'r').readlines()
@@ -471,25 +451,52 @@ class APEfile:
 		return [complement,position]
 
 
-
 	def PickPrimers(self):
-		cnt=0
-		passed=[]
-		for em in self.pairs['EM']:
-			#absPositionA=p.
-			emP,emF=em[4],em[5]
-			for wt in self.pairs['WT']:
-				wtP,wtF=wt[4],wt[5]
-				if wtF == emF and emF not in passed:
-					print "PAIR",em
-					passed.append(emF)
-					#break
-					print self.upstreamCUT+int(em[4])-1,self.upstream.cutsite#,self.upstreamCUT+int(em[6])-1,"\n"
-					absPosition=self.upstream.cutsite - (self.upstreamCUT+int(em[4])-1)
-					print absPosition
-					cnt+=1
-			if cnt > 50:
+
+
+		EmSeqs=zip(*self.pairs['EM'])[5]
+		WtSeqs=zip(*self.pairs['WT'])[5]
+		validOverlap=list(set(EmSeqs).intersection(set(WtSeqs)))
+		self.pairs['EM']=[i for i in self.pairs['EM'] if i[5] in validOverlap]
+		self.pairs['WT']=[i for i in self.pairs['WT'] if i[5] in validOverlap]
+
+		## Yes I know, pairs['EM'] and para['WT'] are NOT THE SAME LENGTH
+		## however, if we parse through one fully without a match then it doesnt matter
+		testedPrimers=defaultdict(int)
+		for em,wt in zip(self.pairs['EM'],self.pairs['WT']):
+			if em[5] == wt[5]:
+				##Locate primer is to determine if this what the relative strand 
+				## information is. Primer3 output doesn't tell us this
+
+				self.wtF1=self.FOR[wt[5]]
+				self.wtF1+=self.LocatePrimer(wt[5])
+
+				self.emF1=self.FOR[em[5]]
+				self.wtF1+=self.LocatePrimer(wt[5])
+
+				self.wtR1=self.REV[wt[7]]
+				self.wtR1+=self.LocatePrimer(wt[7])
+
+				self.emR1=self.REV[em[7]]
+				self.emR1+=self.LocatePrimer(em[7])
+
+				self.CommonForward=True
+
+				return
+			testedPrimers[em[5]]+=1
+			if len(testedPrimers) > 10:
 				break
+		##If we can't find common ground in "Decent" common forward primers
+		##Then take best for WT and EM independently (1st ranked pairs)
+		self.wtF1=self.FOR[self.pairs['WT'][0][5]]+self.LocatePrimer(self.pairs['WT'][0][5])
+		self.emF1=self.FOR[self.pairs['EM'][0][5]]+self.LocatePrimer(self.pairs['EM'][0][5])
+
+		self.wtR1=self.REV[self.pairs['WT'][0][7]]+self.LocatePrimer(self.pairs['WT'][0][7])
+		self.emR1=self.REV[self.pairs['EM'][0][7]]+self.LocatePrimer(self.pairs['EM'][0][7])
+
+		self.CommonForward=False
+
+
 
 	def CommitFile(self):
 		#self.fullfile=open(self.APEgDNA,'r').readlines()
@@ -500,59 +507,61 @@ class APEfile:
 				self.insertionPoint=x
 			elif seqstart.match(self.fullfile[x]):
 				self.originPoint=x
-		try:
-			forwardstats=self.FOR[self.Forward]
-		except KeyError:
-			try:
-				forwardstats=self.REV[self.Forward]
-			except KeyError:
-				forwardstats=None
+
+
+
+		if self.wtF1[-2] == True:
+			wtF1_sense=self.RevSeq(self.wtF1[1])
+		else:
+			wtF1_sense=self.wtF1[1]
+
+		if self.emF1[-2] == True:
+			emF1_sense=self.RevSeq(self.emF1[1])
+		else:
+			emF1_sense=self.emF1[1]
+
+		if self.wtR1[-2] == True:
+			wtR1_sense=self.RevSeq(self.wtR1[1])
+		else:
+			wtR1_sense=self.wtR1[1]
+
+
+		if self.emR1[-2] == True:
+			emR1_sense=self.RevSeq(self.emR1[1])
+		else:
+			emR1_sense=self.emR1[1]
+
+
+		for PT in ["WT","EM"]:
+
+			self.InsertLine("""COMMENT     \n""")			
+			if PT == "WT":
+				self.InsertLine("""COMMENT     Wild-Type PCR:\n""")
+				self.InsertLine("""COMMENT     OLIGO     start     len     tm     gc%     any_th     3'th     hairpin     seq(5' to 3')\n""")
+				self.InsertLine("""COMMENT     LEFT       %s      %s     %s     %s     %s      %s     %s    %s\n""" 
+				% (str(self.wtF1[-1]),self.wtF1[3],self.wtF1[6],self.wtF1[5],self.wtF1[7:10],wtF1_sense) )
+				self.InsertLine("""COMMENT     RIGHT      %s      %s     %s     %s     %s      %s     %s    %s\n""" 
+				% (str(self.wtR1[-1]),self.wtR1[3],self.wtR1[6],self.wtR1[5],self.wtR1[7:10],wtR1_sense)       )
+				self.InsertLine("""COMMENT     \n""")	
+
+
+			else:
 				pass
-		try:
-			reversestats=self.REV[self.Reverse]
-		except KeyError:
-			try:
-				reversestats=self.FOR[self.Reverse]
-			except KeyError:
-				reversestats=None
-
-		#print self.Sequence
-		#upseq=
-		##Lets add the location that WE find for the features
-		forwardstats+=self.LocatePrimer(self.Forward)
-		self.FOR[self.Forward]=forwardstats
-		reversestats+=self.LocatePrimer(self.Reverse)
-		self.REV[self.Reverse]=reversestats
+			#	self.InsertLine("""COMMENT     Deletion PCR:\n""")
+			#	self.InsertLine("""COMMENT     OLIGO     start     len     tm     gc%     any_th     3'th     hairpin     seq(5' to 3')\n""")
+			#	self.InsertLine("""COMMENT     LEFT       %s      %s     %s     %s     %s      %s     %s    %s\n""" 
+			#	% (str(self.ForwardStart),forwardstats[3],forwardstats[6],forwardstats[5],forwardstats[7],forwardstats[8],forwardstats[9],forward5to3) )
+			#	self.InsertLine("""COMMENT     RIGHT      %s      %s     %s     %s     %s      %s     %s    %s\n""" 
+			#	% (str(self.ReverseStart),reversestats[3],reversestats[6],reversestats[5],reversestats[7],reversestats[8],reversestats[9],reverse5to3)       )
+			#	self.InsertLine("""COMMENT     \n""")	
 
 
-		self.InsertLine("""COMMENT     \n""")			
-		#self.InsertLine("""COMMENT     %s PRODUCT SIZE: %s\n""" % (self.PrimerType, self.product))
-		if self.PrimerType == "WT":
-			self.InsertLine("""COMMENT     Wild-Type PCR:\n""")
-		else:
-			self.InsertLine("""COMMENT     Deletion PCR:\n""")
+			# self.InsertLine("""COMMENT     LEFT       %s      %s     %s     %s     %s      %s     %s    %s\n""" 
+			# 	% (str(self.ForwardStart),forwardstats[3],forwardstats[6],forwardstats[5],forwardstats[7],forwardstats[8],forwardstats[9],forward5to3) )
 
-		self.InsertLine("""COMMENT     OLIGO     start     len     tm     gc%     any_th     3'th     hairpin     seq(5' to 3')\n""")
-		#print forwardstats[-2]
-		if forwardstats[-2] == True:
-			forward5to3=self.RevSeq(self.Forward)
-		else:
-			forward5to3=str(self.Forward)
-		print forward5to3 
-
-
-		if reversestats[-2] == True:
-			reverse5to3=self.RevSeq(self.Reverse)
-		else:
-			reverse5to3=self.Reverse
-
-
-		self.InsertLine("""COMMENT     LEFT       %s      %s     %s     %s     %s      %s     %s    %s\n""" 
-			% (str(self.ForwardStart),forwardstats[3],forwardstats[6],forwardstats[5],forwardstats[7],forwardstats[8],forwardstats[9],forward5to3) )
-
-		self.InsertLine("""COMMENT     RIGHT      %s      %s     %s     %s     %s      %s     %s    %s\n""" 
-			% (str(self.ReverseStart),reversestats[3],reversestats[6],reversestats[5],reversestats[7],reversestats[8],reversestats[9],reverse5to3)       )
-		self.InsertLine("""COMMENT     \n""")			
+			# self.InsertLine("""COMMENT     RIGHT      %s      %s     %s     %s     %s      %s     %s    %s\n""" 
+			# 	% (str(self.ReverseStart),reversestats[3],reversestats[6],reversestats[5],reversestats[7],reversestats[8],reversestats[9],reverse5to3)       )
+			# self.InsertLine("""COMMENT     \n""")			
 
 		gRNA_only=filter(lambda p: re.search("gRNA",p),self.features)
 		#print gRNA_only
@@ -665,6 +674,7 @@ if __name__ == "__main__":
 		###At this point we have a list of EM and WT primers
 		###Lets look at these in a co-ordinated fashion to come up with ideal pairs
 		filein.PickPrimers()
+		filein.CommitFile()
 		#for p,j in filein.pairs.iteritems():
 		#	cols=zip(*j)
 		#	print p,len(j),cols[6][:100]
