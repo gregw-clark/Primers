@@ -486,6 +486,7 @@ class APEfile:
 			testedPrimers[em[5]]+=1
 			if len(testedPrimers) > 10:
 				break
+				
 		##If we can't find common ground in "Decent" common forward primers
 		##Then take best for WT and EM independently (1st ranked pairs)
 		self.wtF1=self.FOR[self.pairs['WT'][0][5]]+self.LocatePrimer(self.pairs['WT'][0][5])
@@ -539,9 +540,9 @@ class APEfile:
 				self.InsertLine("""COMMENT     Wild-Type PCR:\n""")
 				self.InsertLine("""COMMENT     OLIGO     start     len     tm     gc%     any_th     3'th     hairpin     seq(5' to 3')\n""")
 				self.InsertLine("""COMMENT     LEFT       %s      %s     %s     %s     %s      %s     %s    %s\n""" 
-				% (str(self.wtF1[-1]),self.wtF1[3],self.wtF1[6],self.wtF1[5],self.wtF1[7:10],wtF1_sense) )
+				% (str(self.wtF1[-1]),self.wtF1[3],self.wtF1[6],self.wtF1[5],self.wtF1[7],self.wtF1[8],self.wtF1[9],wtF1_sense) )
 				self.InsertLine("""COMMENT     RIGHT      %s      %s     %s     %s     %s      %s     %s    %s\n""" 
-				% (str(self.wtR1[-1]),self.wtR1[3],self.wtR1[6],self.wtR1[5],self.wtR1[7:10],wtR1_sense)       )
+				% (str(self.wtR1[-1]),self.wtR1[3],self.wtR1[6],self.wtR1[5],self.wtR1[7],self.wtR1[8],self.wtR1[9],wtR1_sense)       )
 				self.InsertLine("""COMMENT     \n""")	
 
 
@@ -564,22 +565,22 @@ class APEfile:
 			# self.InsertLine("""COMMENT     \n""")			
 
 		gRNA_only=filter(lambda p: re.search("gRNA",p),self.features)
-		#print gRNA_only
-		if self.PrimerType != "WT":
-			self.InsertLine("""COMMENT     %s PRODUCT SIZE: %s\n""" % ("WT_EM", self.WTEMproduct))
-			self.InsertLine("""COMMENT     %s PRODUCT SIZE: %s\n""" % (self.PrimerType, self.EMproduct))
-			self.InsertLine("""COMMENT     \n""")
+		# #print gRNA_only
+		# if self.PrimerType != "WT":
+		# 	self.InsertLine("""COMMENT     %s PRODUCT SIZE: %s\n""" % ("WT_EM", self.WTEMproduct))
+		# 	self.InsertLine("""COMMENT     %s PRODUCT SIZE: %s\n""" % (self.PrimerType, self.EMproduct))
+		# 	self.InsertLine("""COMMENT     \n""")
 
-			self.InsertLine("""COMMENT     All Potential Deletion Sizes:\n""")
-			for x1 in range(len(gRNA_only)):
-				g1=gRNA_only[x1]
-				for x2 in range(x1+1,len(gRNA_only)):
-					g2=gRNA_only[x2]
-					self.InsertLine("""COMMENT     %s <-> %s : %s\n""" % (g1, g2,abs(self.features[g1].cutsite-self.features[g2].cutsite)))
-					#self.InsertLine()	
-					#print g,filein.features[g].cutsite
-		else:
-			self.InsertLine("""COMMENT     %s PRODUCT SIZE: %s\n""" % ("WT", self.WTproduct))
+		# 	self.InsertLine("""COMMENT     All Potential Deletion Sizes:\n""")
+		# 	for x1 in range(len(gRNA_only)):
+		# 		g1=gRNA_only[x1]
+		# 		for x2 in range(x1+1,len(gRNA_only)):
+		# 			g2=gRNA_only[x2]
+		# 			self.InsertLine("""COMMENT     %s <-> %s : %s\n""" % (g1, g2,abs(self.features[g1].cutsite-self.features[g2].cutsite)))
+		# 			#self.InsertLine()	
+		# 			#print g,filein.features[g].cutsite
+		# else:
+		# 	self.InsertLine("""COMMENT     %s PRODUCT SIZE: %s\n""" % ("WT", self.WTproduct))
 						
 		self.InsertLine("""COMMENT     \n""")
 
